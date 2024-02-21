@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_berdagang_app/core/constants/colors.dart';
+import 'package:flutter_berdagang_app/data/datasource/auth_local_datasource.dart';
+import 'package:flutter_berdagang_app/data/datasource/auth_remote_datasource.dart';
+import 'package:flutter_berdagang_app/presentation/auth/bloc/logout/logout_bloc.dart';
 import 'package:flutter_berdagang_app/presentation/auth/login_page.dart';
+import 'package:flutter_berdagang_app/presentation/home/pages/dashboard_page.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import 'presentation/auth/bloc/login/login_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 void main() {
   runApp(const MyApp());
@@ -8,31 +17,62 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a blue toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => LoginBloc(AuthRemoteDatasource()),
+        ),
+        BlocProvider(
+          create: (context) => LogoutBloc(AuthRemoteDatasource()),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primary),
+          useMaterial3: true,
+          textTheme: GoogleFonts.quicksandTextTheme(
+            Theme.of(context).textTheme,
+          ),
+          appBarTheme: AppBarTheme(
+            color: AppColors.white,
+            elevation: 0,
+            titleTextStyle: GoogleFonts.quicksand(
+              color: AppColors.primary,
+              fontSize: 16.0,
+              fontWeight: FontWeight.w500,
+            ),
+            iconTheme: const IconThemeData(
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+        home: FutureBuilder<bool>(
+            future: AuthLocalDatasource().isAuthDataExists(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
+              if (snapshot.hasData) {
+                if (snapshot.data!) {
+                  return const DashboardPage();
+                } else {
+                  return const LoginPage();
+                }
+              }
+              return const Scaffold(
+                body: Center(
+                  child: Text('Error'),
+                ),
+              );
+            }),
       ),
-      home: const LoginPage(),
     );
   }
 }
